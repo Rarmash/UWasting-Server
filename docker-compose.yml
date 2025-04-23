@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:17
+    container_name: uwaste_db
+    restart: always
+    environment:
+      POSTGRES_USER: hdjiailzervpbz
+      POSTGRES_PASSWORD: 80518c42ccbd56573a6cf762e956804336da9831fc026ac79c66c767010d11ac
+      POSTGRES_DB: d3454hmu58tfpn
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  app:
+    build: .
+    container_name: uwaste_app
+    restart: always
+    environment:
+      PORT: 3000
+      DATABASE_URL: "Host=db;Port=5432;User ID=hdjiailzervpbz;Password=80518c42ccbd56573a6cf762e956804336da9831fc026ac79c66c767010d11ac;Database=d3454hmu58tfpn;Pooling=true;TrustServerCertificate=True;SSL Mode=Disable;"
+    depends_on:
+      - db
+    ports:
+      - "3000:3000"
+
+volumes:
+  pgdata:

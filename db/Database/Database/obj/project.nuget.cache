@@ -1,0 +1,11 @@
+{
+  "version": 2,
+  "dgSpecHash": "PddbJtbdvW5wahF+UiGKZ2/314M0HJtKJpr5IYMQjrAwnTlSFx34ZjEyaFsJDKpoYc7FeEXSBJuHbT+CPBK1ww==",
+  "success": true,
+  "projectFilePath": "D:\\UWasting\\db\\Database\\Database\\Database.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\vital\\.nuget\\packages\\npgsql\\6.0.3\\npgsql.6.0.3.nupkg.sha512",
+    "C:\\Users\\vital\\.nuget\\packages\\system.runtime.compilerservices.unsafe\\6.0.0\\system.runtime.compilerservices.unsafe.6.0.0.nupkg.sha512"
+  ],
+  "logs": []
+}
