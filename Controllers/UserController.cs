@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
+using Database;
 namespace Server.Controllers
 {
     [Route("api/[controller]")]
@@ -14,31 +15,63 @@ namespace Server.Controllers
         [HttpGet]
         public IActionResult RegistrateUser(string login, string password, string name, string surname)
         {
-            (int id, string email, string name, string surname) tmp = Database.Registration.Registrate(login, password, name, surname, 0);
+            string salt = PasswordHasher.GenerateSalt(); // генерируем соль
+            string hashedPassword = PasswordHasher.HashPassword(password, salt); // хэшируем с солью
+
+            var tmp = Database.Registration.Registrate(login, hashedPassword, name, surname, salt); // вызываем обновлённую функцию
+
             if (tmp.id == -1) return BadRequest();
-            User user = new User();
-            user.name = tmp.name;
-            user.surname = tmp.surname;
-            user.email = tmp.email;
-            user.id = tmp.id;
+
+            User user = new User
+            {
+                name = tmp.Name,
+                surname = tmp.Surname,
+                email = tmp.email,
+                id = tmp.id
+            };
+
             return Ok(user);
         }
+
 
         [Route("/GetByLoginAndPassword")]
         [HttpGet]
         public IActionResult GetByLoginAndPassword(string login, string password)
         {
-            (int id, string email, string name, string surname) tmp = Database.Autorization.Join(login, password);
-            //Console.WriteLine("Не стучи, заебал");
-            Console.WriteLine(tmp);
-            if (tmp.id == -1) return BadRequest();
-            User user = new User();
-            user.name = tmp.name;
-            user.surname = tmp.surname;
-            user.email = tmp.email;
-            user.id = tmp.id;
+            using var myCon = new Npgsql.NpgsqlConnection(Globaldata.connect);
+            myCon.Open();
+
+            var cmd = new Npgsql.NpgsqlCommand("SELECT \"id\", \"Login\", \"Name\", \"Surname\", \"Password\", \"Salt\" FROM \"Users\" WHERE \"Login\" = @login", myCon);
+            cmd.Parameters.AddWithValue("@login", login);
+
+            using var reader = cmd.ExecuteReader();
+
+            if (!reader.Read())
+                return BadRequest(); // Пользователь не найден
+
+            int userId = reader.GetInt32(0);
+            string email = reader.GetString(1);
+            string name = reader.GetString(2);
+            string surname = reader.GetString(3);
+            string storedHashedPassword = reader.GetString(4);
+            string storedSalt = reader.GetString(5);
+
+            string hashedInputPassword = PasswordHasher.HashPassword(password, storedSalt);
+
+            if (hashedInputPassword != storedHashedPassword)
+                return BadRequest(); // Пароль неверный
+
+            User user = new User
+            {
+                id = userId,
+                email = email,
+                name = name,
+                surname = surname
+            };
+
             return Ok(user);
         }
+
         [Route("/FindLoginInDB")]
         [HttpGet]
         public IActionResult FindLoginInDB(string login)
@@ -58,11 +91,20 @@ namespace Server.Controllers
             if (Database.Registration.CheckingUser(login)) return BadRequest();
             return Ok(Database.Registration.ChangeLogin(id, login));
         }
+
         [Route("/ChangePassword")]
         [HttpGet]
-        public IActionResult ChangePassword(int id, string password)
+        public IActionResult ChangePassword(int id, string newPassword)
         {
-            return Ok(Database.Registration.ChangePassword(id, password));
+            string newSalt = PasswordHasher.GenerateSalt();
+            string hashedPassword = PasswordHasher.HashPassword(newPassword, newSalt);
+
+            bool result = Database.Registration.ChangePassword(id, hashedPassword, newSalt);
+            if (!result)
+                return BadRequest();
+
+            return Ok();
         }
+
     }
 }
